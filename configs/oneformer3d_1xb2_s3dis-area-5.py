@@ -138,6 +138,11 @@ test_pipeline = [
         with_mask_3d=True,
         with_seg_3d=True),
     dict(
+        type='PointSample_',
+        num_points=100000),
+    dict(type='PointInstClassMapping_',
+        num_classes=num_instance_classes),
+    dict(
         type='MultiScaleFlipAug3D',
         img_scale=(1333, 800),
         pts_scale_ratio=1,
@@ -146,7 +151,9 @@ test_pipeline = [
             dict(
                 type='NormalizePointsColor_',
                 color_mean=[127.5, 127.5, 127.5])]),
-    dict(type='Pack3DDetInputs_', keys=['points'])
+    dict(type='Pack3DDetInputs_', keys=[
+            'points'
+            ])
 ]
 
 # run settings

@@ -338,10 +338,13 @@ class PointSample_(PointSample):
         input_dict['points'] = points
         pts_instance_mask = input_dict.get('pts_instance_mask', None)
         pts_semantic_mask = input_dict.get('pts_semantic_mask', None)
+        gt_pts_instance_mask = input_dict["eval_ann_info"].get('pts_instance_mask', None)
+        gt_pts_semantic_mask = input_dict["eval_ann_info"].get('pts_semantic_mask', None)
         sp_pts_mask = input_dict.get('sp_pts_mask', None)
 
         if pts_instance_mask is not None:
             pts_instance_mask = pts_instance_mask[choices]
+            gt_pts_instance_mask = gt_pts_instance_mask[choices]
             
             idxs = np.unique(pts_instance_mask)
             mapping = np.zeros(np.max(idxs) + 2, dtype=int)
@@ -354,15 +357,33 @@ class PointSample_(PointSample):
 
             input_dict['pts_instance_mask'] = pts_instance_mask
 
+            idxs = np.unique(gt_pts_instance_mask)
+            mapping = np.zeros(np.max(idxs) + 2, dtype=int)
+            new_idxs = np.arange(len(idxs))
+            if idxs[0] == -1:
+                mapping[idxs] = new_idxs - 1
+            else:
+                mapping[idxs] = new_idxs
+            gt_pts_instance_mask = mapping[gt_pts_instance_mask]
+
+            input_dict['eval_ann_info']['pts_instance_mask'] = pts_instance_mask
+
         if pts_semantic_mask is not None:
             pts_semantic_mask = pts_semantic_mask[choices]
             input_dict['pts_semantic_mask'] = pts_semantic_mask
+
+            gt_pts_semantic_mask = gt_pts_semantic_mask[choices]
+            input_dict['eval_ann_info']['pts_semantic_mask'] = gt_pts_semantic_mask
 
         if sp_pts_mask is not None:
             sp_pts_mask = sp_pts_mask[choices]
             sp_pts_mask = np.unique(
                 sp_pts_mask, return_inverse=True)[1]
             input_dict['sp_pts_mask'] = sp_pts_mask
+        input_dict['subsampled_indices'] = choices
+        # print("------------------Debugging--------------")
+        # print(input_dict.keys())
+        # print(input_dict["eval_ann_info"].keys())
         return input_dict
     
 @TRANSFORMS.register_module()

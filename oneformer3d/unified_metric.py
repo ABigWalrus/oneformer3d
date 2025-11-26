@@ -9,6 +9,8 @@ from mmdet3d.registry import METRICS
 from mmdet3d.evaluation import panoptic_seg_eval, seg_eval
 from .instance_seg_eval import instance_seg_eval
 
+import pprint
+
 
 @METRICS.register_module()
 class UnifiedSegMetric(SegMetric):
@@ -85,7 +87,6 @@ class UnifiedSegMetric(SegMetric):
         pred_masks_pan = []
 
         for eval_ann, single_pred_results in results:
-            
             if self.metric_meta['dataset_name'] == 'S3DIS':
                 pan_gt = {}
                 pan_gt['pts_semantic_mask'] = eval_ann['pts_semantic_mask']
@@ -134,6 +135,15 @@ class UnifiedSegMetric(SegMetric):
             pred_instance_scores.append(
                 torch.tensor(single_pred_results['instance_scores']))
 
+
+        # print("=====================================")
+        # for f in range(len(gt_masks_pan)):
+        #     print(f"Semantic, gt: {gt_masks_pan[f]['pts_semantic_mask'].shape}, pred: {pred_masks_pan[f]['pts_semantic_mask'].shape}")
+        #     print(f"Instance, gt: {gt_masks_pan[f]['pts_instance_mask'].shape}, pred: {pred_masks_pan[f]['pts_instance_mask'].shape}")
+        #     print("\n")
+        # print("=====================================")
+
+        # pprint.pp(results)
         ret_pan = panoptic_seg_eval(
             gt_masks_pan, pred_masks_pan, classes, thing_classes,
             stuff_classes, self.min_num_points, self.id_offset,
