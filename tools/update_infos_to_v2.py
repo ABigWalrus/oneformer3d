@@ -200,6 +200,7 @@ def update_scannet_infos(pkl_path, out_dir):
     print(f'Reading from input file: {pkl_path}.')
     data_list = mmengine.load(pkl_path)
     print('Start updating:')
+
     converted_list = []
     for ori_info_dict in mmengine.track_iter_progress(data_list):
         temp_data_info = get_empty_standard_data_info()
@@ -220,6 +221,7 @@ def update_scannet_infos(pkl_path, out_dir):
         # TODO support camera
         # np.linalg.inv(info['axis_align_matrix'] @ extrinsic): depth2cam
         anns = ori_info_dict.get('annos', None)
+
         ignore_class_name = set()
         if anns is not None:
             temp_data_info['axis_align_matrix'] = anns[

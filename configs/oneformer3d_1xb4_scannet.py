@@ -145,6 +145,9 @@ test_pipeline = [
         with_mask_3d=True,
         with_seg_3d=True,
         with_sp_mask_3d=True),
+    dict(
+        type='PointSample_',
+        num_points=6000),
     dict(type='PointSegClassMapping'),
     dict(
         type='MultiScaleFlipAug3D',

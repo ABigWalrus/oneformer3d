@@ -73,6 +73,7 @@ def read_mesh_vertices_rgb(filename):
     Returns:
         Vertices. Note that RGB values are in 0-255.
     """
+    print(filename)
     assert os.path.isfile(filename)
     with open(filename, 'rb') as f:
         plydata = PlyData.read(f)

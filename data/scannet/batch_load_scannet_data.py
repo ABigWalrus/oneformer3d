@@ -124,11 +124,9 @@ def batch_export(max_num_point,
             print('File already exists. skipping.')
             print('-' * 20 + 'done')
             continue
-        try:
-            export_one_scan(scan_name, output_filename_prefix, max_num_point,
-                            label_map_file, scannet_dir, test_mode, scannet200)
-        except Exception:
-            print(f'Failed export scan: {scan_name}')
+        export_one_scan(scan_name, output_filename_prefix, max_num_point,
+                        label_map_file, scannet_dir, test_mode, scannet200)
+            # print(f'Failed export scan: {scan_name}')
         print('-' * 20 + 'done')
 
 

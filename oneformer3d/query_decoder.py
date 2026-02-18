@@ -391,6 +391,10 @@ class ScanNetQueryDecoder(QueryDecoder):
             pred_score = self.out_score(norm_query) if self.objectness_flag \
                 else None
             pred_scores.append(pred_score)
+            print("=====================Debugging================")
+            print(f"tensor shape: {norm_query.shape}, dtype: {norm_query.dtype}")
+            print(f"tensor shape: {mask_feats[i].shape}, dtype: {mask_feats[i].dtype}")
+            print(f"=============================================")
             pred_mask = torch.einsum('nd,md->nm', norm_query, mask_feats[i])
             if self.attn_mask:
                 attn_mask = (pred_mask.sigmoid() < 0.5).bool()
