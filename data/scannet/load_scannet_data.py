@@ -58,6 +58,8 @@ def extract_bbox(mesh_vertices, object_id_to_segs, object_id_to_label_id,
     num_instances = len(np.unique(list(object_id_to_segs.keys())))
     instance_bboxes = np.zeros((num_instances, 7))
     for obj_id in object_id_to_segs:
+        if obj_id not in object_id_to_label_id.keys():
+            continue
         label_id = object_id_to_label_id[obj_id]
         obj_pc = mesh_vertices[instance_ids == obj_id, 0:3]
         if len(obj_pc) == 0:
@@ -134,15 +136,22 @@ def export(mesh_file,
         seg_to_verts, num_verts = read_segmentation(seg_file)
         label_ids = np.zeros(shape=(num_verts), dtype=np.uint32)
         object_id_to_label_id = {}
+        print(len(seg_to_verts))
         for label, segs in label_to_segs.items():
             label_id = label_map[label]
             for seg in segs:
+                if seg not in seg_to_verts.keys(): 
+                    continue
                 verts = seg_to_verts[seg]
                 label_ids[verts] = label_id
         instance_ids = np.zeros(
             shape=(num_verts), dtype=np.uint32)  # 0: unannotated
         for object_id, segs in object_id_to_segs.items():
             for seg in segs:
+                
+                if seg not in seg_to_verts.keys(): 
+                    continue
+
                 verts = seg_to_verts[seg]
                 instance_ids[verts] = object_id
                 if object_id not in object_id_to_label_id:

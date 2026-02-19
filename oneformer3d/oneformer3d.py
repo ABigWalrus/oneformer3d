@@ -307,17 +307,28 @@ class ScanNetOneFormer3D(ScanNetOneFormer3DMixin, Base3DDetector):
             TensorField: Containing features and coordinates of a
                 sparse tensor.
         """
+        print("=== VOXEL_SIZE DEBUG ===")
+        print(f"self.voxel_size = {self.voxel_size}")
+        print(f"self.min_spatial_shape = {self.min_spatial_shape}")
+        
+        for i, p in enumerate(points):
+            norm_xyz = (p[:, :3] - p[:, :3].min(0)[0]) / self.voxel_size
+            print(f"Sample {i}: raw_pts={p.shape[0]}, norm_max={norm_xyz.max(0)}")
         if elastic_points is None:
             coordinates, features = ME.utils.batch_sparse_collate(
                 [((p[:, :3] - p[:, :3].min(0)[0]) / self.voxel_size,
                   torch.hstack((p[:, 3:], p[:, :3] - p[:, :3].mean(0))))
                  for p in points])
+
         else:
             coordinates, features = ME.utils.batch_sparse_collate(
                 [((el_p - el_p.min(0)[0]),
                   torch.hstack((p[:, 3:], p[:, :3] - p[:, :3].mean(0))))
                  for el_p, p in zip(elastic_points, points)])
-        
+        print("=================Debugging==============")
+        # 0.02
+        print(coordinates)
+        print("========================================")
         spatial_shape = torch.clip(
             coordinates.max(0)[0][1:] + 1, self.min_spatial_shape)
         field = ME.TensorField(features=features, coordinates=coordinates)
@@ -393,6 +404,39 @@ class ScanNetOneFormer3D(ScanNetOneFormer3DMixin, Base3DDetector):
                 - pts_instance_mask (Tensor): Instance mask, has a shape
                     (num_points, num_instances) of type bool.
         """
+        import os
+        import numpy as np
+        import open3d as o3d
+        def save_point_cloud(points, file_path):
+            if isinstance(points, torch.Tensor):
+                points = points.cpu().numpy()  # Convert tensor to NumPy array on the CPU
+            points = np.asarray(points, dtype=np.float32)  # Ensure points are in float32 format
+            pc = o3d.geometry.PointCloud()
+            pc.points = o3d.utility.Vector3dVector(points[:, :3])
+            pc.colors = o3d.utility.Vector3dVector(points[:, 3:])
+            o3d.io.write_point_cloud(file_path, pc)
+
+        def filter_and_save_instances(instance_labels, instance_scores, pts_instance_mask, input_points,input_point_name, threshold=0.5):
+
+            base_dir = f"./work_dirs/{input_point_name}"
+            if not os.path.exists(base_dir):
+                os.makedirs(base_dir)
+            input_pc_path = os.path.join(base_dir, f"{input_point_name}.ply")
+            save_point_cloud(input_points, input_pc_path)
+
+            instance_count = {}
+            for i in range(len(instance_scores)):
+                if instance_scores[i] >= threshold:
+                    label = instance_labels[i].item()
+                    if label not in instance_count:
+                        instance_count[label] = 0
+                    instance_count[label] += 1
+
+                    instance_mask = pts_instance_mask[i].astype(bool)
+                    instance_points = input_points[instance_mask]
+
+                    instance_pc_path = os.path.join(base_dir, f"{input_point_name}_{label}_{instance_count[label]}.ply")
+                    save_point_cloud(instance_points, instance_pc_path)
         batch_offsets = [0]
         superpoint_bias = 0
         sp_pts_masks = []
@@ -403,12 +447,102 @@ class ScanNetOneFormer3D(ScanNetOneFormer3DMixin, Base3DDetector):
             batch_offsets.append(superpoint_bias)
             sp_pts_masks.append(gt_pts_seg.sp_pts_mask)
 
+        # save_point_cloud(batch_inputs_dict['points'][0], test_path)
+
         coordinates, features, inverse_mapping, spatial_shape = self.collate(
             batch_inputs_dict['points'])
 
         x = spconv.SparseConvTensor(
             features, coordinates, spatial_shape, len(batch_data_samples))
+        # ===================DEBUGGING==================
+        # SparseConvTensor[shape=torch.Size([161494, 6])]
+        # [353, 344, 128]
+# ===================DEBUGGING==================
+# SparseConvTensor[shape=torch.Size([231363, 6])]
+# [444, 422, 224]
+
+# [<Det3DDataSample(
+
+#     META INFORMATION
+#     flip: False
+#     lidar_path: 'data/scannet/points/scene0568_00.bin'
+#     pcd_horizontal_flip: False
+#     sample_idx: 0
+#     num_pts_feats: 6
+#     pcd_scale_factor: 1.0
+#     pcd_vertical_flip: False
+
+#     DATA FIELDS
+#     eval_ann_info: 
+#         pts_instance_mask: array([-1, -1, -1, ..., -1, -1, -1])
+#         pts_semantic_mask: array([20, 20, 20, ..., 20, 20, 20])
+#         sp_pts_mask: array([ 323,  323,  323, ..., 1387, 1387, 1387])
+#         lidar_idx: 'scene0568_00'
+#     gt_instances: <InstanceData_(
+        
+#             META INFORMATION
+        
+#             DATA FIELDS
+#         ) at 0x733022bf2e30>
+#     gt_pts_seg: <PointData(
+        
+#             META INFORMATION
+        
+#             DATA FIELDS
+#             sp_pts_mask: tensor([ 323,  323,  323,  ..., 1387, 1387, 1387], device='cuda:0')
+#         ) at 0x733022bf1150>
+#     gt_instances_3d: <InstanceData_(
+        
+#             META INFORMATION
+        
+#             DATA FIELDS
+#         ) at 0x733022bf1000>
+# ) at 0x733022bf3460>]
+
+# ===================DEBUGGING==================
+# [<Det3DDataSample(
+
+#     META INFORMATION
+#     sample_idx: 0
+#     pcd_vertical_flip: False
+#     lidar_path: 'data/scannet/points/scene0568_00.bin'
+#     pcd_scale_factor: 1.0
+#     flip: False
+#     pcd_horizontal_flip: False
+#     num_pts_feats: 6
+
+#     DATA FIELDS
+#     gt_instances: <InstanceData_(
+        
+#             META INFORMATION
+        
+#             DATA FIELDS
+#         ) at 0x7dd5539cd2d0>
+#     eval_ann_info: 
+#         pts_instance_mask: array([-1, -1, -1, ..., -1, -1,  9])
+#         pts_semantic_mask: array([20, 20, 20, ..., 20, 20,  9])
+#         sp_pts_mask: array([     0,      1,      2, ..., 232450, 232451, 232452])
+#         lidar_idx: 'scene0568_00'
+#     gt_pts_seg: <PointData(
+        
+#             META INFORMATION
+        
+#             DATA FIELDS
+#             sp_pts_mask: tensor([     0,      1,      2,  ..., 232450, 232451, 232452], device='cuda:0')
+#         ) at 0x7dd5539cf8b0>
+#     gt_instances_3d: <InstanceData_(
+        
+#             META INFORMATION
+        
+#             DATA FIELDS
+#         ) at 0x7dd5539cf550>
+# ) at 0x7dd5539cfaf0>]
+
+
+
         sp_pts_masks = torch.hstack(sp_pts_masks)
+
+
         x = self.extract_feat(
             x, sp_pts_masks, inverse_mapping, batch_offsets)
         x = self.decoder(x, x)
@@ -416,6 +550,19 @@ class ScanNetOneFormer3D(ScanNetOneFormer3DMixin, Base3DDetector):
         results_list = self.predict_by_feat(x, sp_pts_masks)
         for i, data_sample in enumerate(batch_data_samples):
             data_sample.pred_pts_seg = results_list[i]
+
+
+        pred_pts_seg = batch_data_samples[0].pred_pts_seg
+        instance_labels  = pred_pts_seg.instance_labels # tensor, (num_instance,)
+        instance_scores = pred_pts_seg.instance_scores # tensor, (num_instance,)
+        pts_instance_mask = pred_pts_seg.pts_instance_mask[0] # tensor, (num_instances, num_points)
+        input_points = batch_inputs_dict["points"][0] # tensor, (num_points, xyzrgb)
+        input_point_name = batch_data_samples[0].lidar_path.split('/')[-1].split('.')[0]
+
+
+
+        filter_and_save_instances(instance_labels, instance_scores, pts_instance_mask, input_points, input_point_name)
+
         return batch_data_samples
 
 

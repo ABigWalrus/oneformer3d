@@ -83,6 +83,11 @@ def test(args):
         "work_dirs/pretrained/oneformer3d_1xb4_scannet.pth"
         ], cwd=".", check=True)
 
+def all(args):
+    clean(args)
+    preprocess(args)
+    test(args)
+
 def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -98,6 +103,9 @@ def main():
 
     tester = subparsers.add_parser("test")
     tester.set_defaults(func=test)
+
+    aller = subparsers.add_parser("all")
+    aller.set_defaults(func=all)
 
     args = parser.parse_args()
     args.func(args)
