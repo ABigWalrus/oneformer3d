@@ -28,7 +28,7 @@ def clean(args):
 def copy_noisy_scannet_test(args):
 
     scannet_path = Path("../../data/scannet")
-    noisy_scannet_path = Path("../../data/noisy_downs_scannet")
+    noisy_scannet_path = Path("../../data/denoised_downs_scannet")
 
     with open(Path("data/scannet") / "meta_data/scannetv2_val.txt", 'r') as f:
         for scan in f.readlines():
@@ -44,11 +44,11 @@ def copy_noisy_scannet_test(args):
                 "_2d-instance-filt.zip",
                 "_2d-label.zip",
                 "_2d-label-filt.zip",
-                "_vh_clean.aggregation.json",
+                # "_vh_clean.aggregation.json",
                 "_vh_clean.ply",
                 "_vh_clean.segs.json",
                 "_vh_clean_2.labels.ply",
-                "_vh_clean_2.0.010000.segs.json",
+                # "_vh_clean_2.0.010000.segs.json",
             ]
 
             point_clouds = [
@@ -59,7 +59,9 @@ def copy_noisy_scannet_test(args):
             for file in files:
                 shutil.copy(scan_path / f"{scan_string}{file}", noisy_scan_path)
             
-            shutil.copy2(scan_path / f"{scan_string}_scan_downs.ply", noisy_scan_path / f"{scan_string}_vh_clean_2.ply")
+            shutil.copy2(scan_path / f"{scan_string}_scan_denoised.ply", noisy_scan_path / f"{scan_string}_vh_clean_2.ply")
+            shutil.copy2(scan_path / f"{scan_string}_vh_clean.aggregation.fixed.json", noisy_scan_path / f"{scan_string}_vh_clean.aggregation.json")
+            shutil.copy2(scan_path / f"{scan_string}_vh_clean_2.0.010000.new.segs.json", noisy_scan_path / f"{scan_string}_vh_clean_2.0.010000.segs.json")
 
 
 def preprocess(args):
@@ -77,6 +79,7 @@ def preprocess(args):
     ], cwd=".", check=True)
 
 def test(args):
+
     subprocess.run([
         "python", "tools/test.py", 
         "configs/oneformer3d_1xb4_scannet.py", 
